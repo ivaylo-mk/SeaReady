@@ -1,13 +1,13 @@
 <p align="center">
-	<img src="icon-transparent.png" alt="SeaReady" width="200" />
+	<img src="icon-transparent.png" alt="SeaReady" width="250" />
 </p>
 
-<h1 align="center">SeaReady</h1>
+---
 
 <p align="center">
 	<a href="https://seaready.ivaylokrastev.com"><img src="https://img.shields.io/badge/PWA-Ready-blue" alt="PWA" /></a>
 	<a href="https://seaready.ivaylokrastev.com"><img src="https://img.shields.io/badge/Offline-Ready-blue" alt="Offline" /></a>
-	<a href="https://seaready.ivaylokrastev.com"><img src="https://img.shields.io/badge/Version-1.4.5-blue" alt="Version" /></a>
+	<a href="https://seaready.ivaylokrastev.com"><img src="https://img.shields.io/badge/Version-1.4.6-blue" alt="Version" /></a>
 </p>
 
 **Sea Service, Certificates and Documents Tracker for Seafarers**
@@ -16,7 +16,7 @@ SeaReady keeps a seafarer's documents, STCW certificates and sea service records
 
 **🌐 Live App:** **[https://seaready.ivaylokrastev.com](https://seaready.ivaylokrastev.com)**
 
-> Opens as an explorable demo; install it to your home screen for your own editable copy.
+> Opens as an explorable demo; install it to your home screen for your own editable and fully offline copy.
 
 ## Features
 
@@ -28,7 +28,7 @@ SeaReady keeps a seafarer's documents, STCW certificates and sea service records
 * **PDF reports** — documents, sea service and matrix as clean PDF files
 * **Multi-seafarer** — track several people on one device
 * **Backup & transfer** — export/import everything as a single file
-* **100% offline after installation** — OCR engine, language data and PDF engine are bundled; no account, no server, no tracking
+* **100% offline** — OCR engine, language data and PDF engine are bundled; no account, no server, no tracking
 
 ## Installing
 
@@ -39,8 +39,6 @@ Open the live link, then:
 |Android|Browser menu ⋮ → **Install app**|
 |iPhone / iPad|Safari Share → **Add to Home Screen**|
 |Windows / Mac|Install icon in the Chrome/Edge address bar|
-
-In a browser tab the app runs as a demo and does not save changes. Once installed, it is your personal, fully offline copy.
 
 ## Privacy
 
