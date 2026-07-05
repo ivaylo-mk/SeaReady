@@ -1,4 +1,4 @@
-const CACHE='seaready-v28';
+const CACHE='seaready-v29';
 const CORE=['./','./index.html','./manifest.json','./icon-192.png','./icon-512.png','./icon-180.png','./favicon-192.png','./favicon-96.png',
   './ocr/tesseract.min.js','./ocr/worker.min.js',
   './ocr/tesseract-core-simd-lstm.wasm.js','./ocr/tesseract-core-lstm.wasm.js',
