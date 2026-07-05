@@ -7,7 +7,7 @@
 <p align="center">
 	<a href="https://seaready.ivaylokrastev.com"><img src="https://img.shields.io/badge/PWA-Ready-blue" alt="PWA" /></a>
 	<a href="https://seaready.ivaylokrastev.com"><img src="https://img.shields.io/badge/Offline-Ready-blue" alt="Offline" /></a>
-	<a href="https://seaready.ivaylokrastev.com"><img src="https://img.shields.io/badge/Version-1.4.6-blue" alt="Version" /></a>
+	<a href="https://seaready.ivaylokrastev.com"><img src="https://img.shields.io/badge/Version-1.4.8-blue" alt="Version" /></a>
 </p>
 
 **Sea Service, Certificates and Documents Tracker for Seafarers**
@@ -42,7 +42,7 @@ Open the live link, then:
 
 ## Privacy
 
-All data stays in the device's local storage. There is no backend, no analytics, no account. Backups are plain files you control.
+All data stays in the device's local storage. There is no backend, no analytics, no account. Nothing is uploaded, and your data stays private. Backups are plain files you control.
 
 ## License
 

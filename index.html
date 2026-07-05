@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  SeaReady v1.4.6 — Sea Service, Certificates and Documents Tracker for Seafarers
+  SeaReady v1.4.8 — Sea Service, Certificates and Documents Tracker for Seafarers
   Copyright (c) 2026 Ivaylo Krastev — https://ivaylokrastev.com
   All rights reserved. See LICENSE for terms.
 -->
@@ -124,8 +124,10 @@ header{
 .thsw input:checked~.slider .cloud{opacity:1}
 /* ---------- layout ---------- */
 main{max-width:860px;margin:0 auto;padding:16px 14px 20px}
+#v-docs, #v-service{padding-bottom:64px}   /* clearance so the floating + never covers the last row */
 .view{display:none;animation:fadein .28s ease}
 .view.active{display:block}
+#v-dash.active{animation:none}
 @keyframes fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 h2.sec{font-size:13px;font-weight:700;letter-spacing:2.2px;text-transform:uppercase;
   color:var(--txt-3);margin:22px 4px 10px}
@@ -332,6 +334,10 @@ input::placeholder,textarea::placeholder{color:var(--txt-3);opacity:1}
 .empty{text-align:center;padding:38px 20px;color:var(--txt-2)}
 .empty .big{font-size:38px;margin-bottom:10px}
 .search{margin-bottom:12px}
+.ord-btn{width:26px;height:20px;border:1px solid var(--glass-brd);border-radius:7px;
+  background:var(--glass-2);color:var(--txt-2);cursor:pointer;display:grid;place-items:center;padding:0}
+.ord-btn:disabled{opacity:.3;cursor:default}
+.ord-btn:active:not(:disabled){transform:scale(.9)}
 .scan-drop{border:1.5px dashed var(--glass-brd-hi);border-radius:var(--r-md);
   padding:20px 14px 14px;text-align:center;color:var(--txt-2);margin-top:6px}
 .scan-prev{max-width:100%;border-radius:var(--r-md);margin-top:12px;display:none}
@@ -407,17 +413,15 @@ input::placeholder,textarea::placeholder{color:var(--txt-3);opacity:1}
   <h2 class="sec">Seafarers</h2>
   <div id="peopleList"></div>
   <button class="btn btn-glass btn-block" style="margin-top:8px" onclick="editPerson()">＋ Add seafarer</button>
-  <h2 class="sec">Reminders</h2>
-  <div class="card" id="notifCard">
-    <div class="switch-row" id="nt-m6" onclick="toggleNotify('m6')" style="margin-top:0">
-      <div class="sl"><b>6-month reminder</b><small>Notify when a document has 6 months of validity left</small></div>
-      <div class="sw"></div></div>
-    <div class="switch-row" id="nt-m3" onclick="toggleNotify('m3')">
-      <div class="sl"><b>3-month reminder</b><small>Notify when a document has 3 months left — and again if it expires</small></div>
-      <div class="sw"></div></div>
-    <button class="btn btn-glass btn-block" id="notifBtn" style="margin-top:14px" onclick="enableNotifs()"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 10a6 6 0 0 1 12 0c0 4 1.5 5.5 2 6.5H4c.5-1 2-2.5 2-6.5z" stroke-linejoin="round"/><path d="M10 19.5a2 2 0 0 0 4 0" stroke-linecap="round"/></svg> Enable notifications</button>
-    <p style="font-size:12.5px;color:var(--txt-3);margin:10px 2px 0" id="notifHint"></p>
+  <h2 class="sec">Backup & transfer</h2>
+  <div class="card" style="display:flex;gap:10px">
+    <button class="btn btn-pri" style="flex:1" onclick="exportData()"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 15.5v-12M7 8l5-5 5 5M4.5 20.5h15" stroke-linecap="round" stroke-linejoin="round"/></svg> Export</button>
+    <button class="btn btn-glass" style="flex:1" onclick="document.getElementById('importFile').click()"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 3.5v12M7 11l5 5 5-5M4.5 20.5h15" stroke-linecap="round" stroke-linejoin="round"/></svg> Import</button>
+    <input type="file" id="importFile" accept=".json,application/json" hidden onchange="importData(this)">
   </div>
+  <p style="font-size:13px;color:var(--txt-3);margin:10px 4px 0">
+    Export all data to one file for import on another device. Nothing is uploaded, and your data stays private.
+  </p>
   <h2 class="sec">Create PDF Report</h2>
   <div class="card" style="display:flex;gap:9px;flex-wrap:wrap">
     <button class="btn btn-glass" style="flex:1;min-width:120px" onclick="pdfReport('docs')">Documents</button>
@@ -427,15 +431,17 @@ input::placeholder,textarea::placeholder{color:var(--txt-3);opacity:1}
   <p style="font-size:13px;color:var(--txt-3);margin:10px 4px 0">
     Creates a PDF of the selected report and saves it to your device.
   </p>
-  <h2 class="sec">Backup & transfer</h2>
-  <div class="card" style="display:flex;gap:10px">
-    <button class="btn btn-pri" style="flex:1" onclick="exportData()"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 15.5v-12M7 8l5-5 5 5M4.5 20.5h15" stroke-linecap="round" stroke-linejoin="round"/></svg> Export</button>
-    <button class="btn btn-glass" style="flex:1" onclick="document.getElementById('importFile').click()"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 3.5v12M7 11l5 5 5-5M4.5 20.5h15" stroke-linecap="round" stroke-linejoin="round"/></svg> Import</button>
-    <input type="file" id="importFile" accept=".json,application/json" hidden onchange="importData(this)">
+  <h2 class="sec">Reminders</h2>
+  <div class="card" id="notifCard">
+    <div class="switch-row" id="nt-m6" onclick="toggleNotify('m6')" style="margin-top:0">
+      <div class="sl"><b>6-month reminder</b><small>Notify when a document has 6 months of validity left</small></div>
+      <div class="sw"></div></div>
+    <div class="switch-row" id="nt-m3" onclick="toggleNotify('m3')">
+      <div class="sl"><b>3-month reminder</b><small>Notify when a document has 3 months left — and again if it expires</small></div>
+      <div class="sw"></div></div>
+    <button class="btn btn-glass btn-block" id="notifBtn" style="margin-top:14px" onclick="enableNotifs()"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 10a6 6 0 0 1 12 0c0 4 1.5 5.5 2 6.5H4c.5-1 2-2.5 2-6.5z" stroke-linejoin="round"/><path d="M10 19.5a2 2 0 0 0 4 0" stroke-linecap="round"/></svg> Enable notifications</button>
   </div>
-  <p style="font-size:13px;color:var(--txt-3);margin:10px 4px 0">
-    Export saves everything to a single file you can Import on another device. All data stays on your device — nothing is uploaded anywhere.
-  </p>
+  <p style="font-size:12.5px;color:var(--txt-3);margin:10px 4px 0" id="notifHint"></p>
   <div style="text-align:center;margin:52px 0 0;color:var(--txt-3)">
     <button class="btn btn-glass btn-sm" style="margin-bottom:16px" onclick="window.open(DONATE_URL,'_blank','noopener')">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 9h11v7a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4V9z" stroke-linejoin="round"/><path d="M16 10.5h1.8a2.5 2.5 0 0 1 0 5H16M7.5 5.5c0-1 .8-1 .8-2M11 5.5c0-1 .8-1 .8-2" stroke-linecap="round"/></svg>
@@ -444,7 +450,7 @@ input::placeholder,textarea::placeholder{color:var(--txt-3);opacity:1}
     <a href="https://ivaylokrastev.com" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;margin-top:8px;color:var(--glow);text-decoration:none;font-size:12.5px;font-weight:600">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 4 5.7 4 9s-1.5 6.4-4 9c-2.5-2.6-4-5.7-4-9s1.5-6.4 4-9z"/></svg>
       ivaylokrastev.com</a>
-    <div style="font-size:11px;margin-top:10px;opacity:.75">Version 1.4.6</div>
+    <div style="font-size:11px;margin-top:10px;opacity:.75">Version 1.4.8</div>
   </div>
 </div>
 </main>
@@ -453,7 +459,7 @@ input::placeholder,textarea::placeholder{color:var(--txt-3);opacity:1}
 
 <nav>
   <button id="nb-dash" class="on" onclick="go('dash')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 13h6V3H3zM15 21h6V11h-6zM3 21h6v-5H3zM15 8h6V3h-6z" stroke-linejoin="round"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 3v6h10V3zM3 15v6h10v-6zM3 3v6h5V3zM16 15v6h5v-6z" stroke-linejoin="round"/></svg>
     Overview</button>
   <button id="nb-docs" onclick="go('docs')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M7 3h7l5 5v13H7z" stroke-linejoin="round"/><path d="M14 3v5h5M10 13h6M10 17h6"/></svg>
@@ -1106,7 +1112,7 @@ function renderDash(){
   const m=me();
   const vd=document.getElementById('v-dash');
   vd.querySelectorAll('.welcome').forEach(e=>e.remove());
-  vd.querySelectorAll('h2.sec, .card, .stats, .totals').forEach(e=>e.style.display=m?'':'none');
+  [...vd.children].forEach(e=>e.style.display=m?'':'none');   // only top-level section blocks
   if(!m){ vd.insertAdjacentHTML('afterbegin',`<div class="welcome">${WELCOME}</div>`); return; }
   let bad=0,warn=0,valid=0,unl=0; const dated=[];
   m.docs.forEach(d=>{ const s=statusOf(d);
@@ -1119,7 +1125,7 @@ function renderDash(){
     <div class="card stat ok"><div class="n">${valid}</div><div class="l">Valid</div></div>
     <div class="card stat info"><div class="n">${unl}</div><div class="l">Unlimited</div></div>`;
   dated.sort((a,b)=>a.s.order-b.s.order);
-  const top=dated.slice(0,14), capMo=36;
+  const top=dated.slice(0,10), capMo=36;
   const cc=document.getElementById('chartCard');
   cc.innerHTML = top.length ? top.map(({d,s})=>{
     const mo=Math.max(0,s.dl)/MONTH_D;
@@ -1166,7 +1172,7 @@ function renderDash(){
       perYear[y]=(perYear[y]||0)+Math.round((stop-cur)/DAY)+1;
       cur=new Date(y+1,0,1);
     } });
-  const years=Object.keys(perYear).sort((a,b)=>b-a).slice(0,10);
+  const years=Object.keys(perYear).sort((a,b)=>b-a).slice(0,10);   // most recent 10 years
   document.getElementById('yearCard').innerHTML = years.length ? years.map(y=>{
     const d=perYear[y]; const w=Math.max(3,Math.min(100,d/366*100));
     return `<div class="chart-row" style="cursor:default">
@@ -1359,7 +1365,7 @@ function editGroup(id){
   const all=uniq(m.service,'company');
   openSheet(`
     <h3>${id?'Edit group':'New operator group'}</h3>
-    <label>Group name</label><input id="f-gn" value="${esc(g.name)}" placeholder="Group name">
+    <label>Group name</label><input id="f-gn" maxlength="60" value="${esc(g.name)}" placeholder="Group name">
     <label>Companies in this group</label>
     ${all.map((c,i)=>`<div class="switch-row ${grpSel.has(c)?'on':''}" id="gc-${i}" style="margin-top:${i?'8':'6'}px"
         onclick="grpToggle(${i},${jsqa(c)})">
@@ -1406,12 +1412,15 @@ function openSheet(html){ document.getElementById('sheetBody').innerHTML='<div c
 function closeSheet(){ document.getElementById('sheetBg').classList.remove('show'); document.body.style.overflow=''; }
 
 /* ---- doc editor + scanner ---- */
-let editingDocId=null, docStatus='date', docCat='';
+let editingDocId=null, docStatus='date', docCat='', pendingCat=null, pendingDoc=null;
 function editDoc(id){
   const m=me(); if(!m)return;
   editingDocId=id||null;
-  const d=id?m.docs.find(x=>x.id===id):{name:'',category:m.cats[0]||'Documents',status:'date',expiry:'',issued:'',number:'',notes:''};
-  docStatus=d.status; docCat=d.category;
+  let d=id?m.docs.find(x=>x.id===id):{name:'',category:m.cats[0]||'Documents',status:'date',expiry:'',issued:'',number:'',notes:''};
+  if(pendingDoc){ d={...d, name:pendingDoc.name, number:pendingDoc.number, notes:pendingDoc.notes,
+    expiry:pendingDoc.expiry, issued:pendingDoc.issued, status:pendingDoc.status}; }
+  docStatus=pendingDoc?pendingDoc.status:d.status; docCat=pendingCat||d.category;
+  pendingCat=null; pendingDoc=null;
   openSheet(`
     <h3>${id?'Edit document':'Add document'}</h3>
     ${id?'':`<div class="scan-drop">
@@ -1429,7 +1438,7 @@ function editDoc(id){
     <img class="scan-prev" id="scanPrev" alt="">
     <div class="scan-prog" id="scanProg"><span id="scanMsg">Reading…</span><div class="pbar"><div class="pfill" id="scanFill"></div></div></div>`}
     <label>Name (English)</label>
-    <input id="f-dname" value="${esc(d.name)}" placeholder="e.g. Advanced Fire Fighting">
+    <input id="f-dname" maxlength="120" value="${esc(d.name)}" placeholder="e.g. Advanced Fire Fighting">
     <label>Category</label>
     <button type="button" class="field-select" id="f-dcat" onclick="pickCategory()">
       <span>${esc(docCat)}</span>
@@ -1443,9 +1452,9 @@ function editDoc(id){
       <label>Expiry date</label>${dateField('f-dexp', d.expiry||'', 'Pick expiry date')}</div>
     <label>Issue date <i>(optional)</i></label>${dateField('f-diss', d.issued||'', 'Pick issue date')}
     <label>Document number <i>(optional)</i></label>
-    <input id="f-dnum" class="mono" value="${esc(d.number||'')}" placeholder="—">
+    <input id="f-dnum" maxlength="60" class="mono" value="${esc(d.number||'')}" placeholder="—">
     <label>Notes <i>(optional)</i></label>
-    <input id="f-dnotes" value="${esc(d.notes||'')}" placeholder="—">
+    <input id="f-dnotes" maxlength="500" value="${esc(d.notes||'')}" placeholder="—">
     <div class="sheet-actions">
       ${id?`<button class="btn btn-danger" onclick="delDoc('${id}')">Delete</button>`:''}
       <button class="btn btn-glass" onclick="closeSheet()">Cancel</button>
@@ -1454,9 +1463,8 @@ function editDoc(id){
 function pickCategory(){
   const m=me(); const cats=[...m.cats]; m.docs.forEach(x=>{if(!cats.includes(x.category))cats.push(x.category);});
   pick('Category', [...cats,{value:'__new',label:'＋ New category…'}], docCat, v=>{
-    if(v==='__new'){ const n=prompt('New category name'); if(!n||!n.trim())return;
-      docCat=n.trim(); if(!m.cats.includes(docCat)) m.cats.push(docCat); }
-    else docCat=v;
+    if(v==='__new'){ newDocCatInline(); return; }
+    docCat=v;
     const b=document.getElementById('f-dcat'); if(b)b.querySelector('span').textContent=docCat; });
 }
 function setDocStatus(v){ docStatus=v;
@@ -1478,26 +1486,71 @@ function saveDoc(){
 }
 function manageCats(){
   const m=me(); if(!m)return;
-  const cats=[...m.cats]; m.docs.forEach(d=>{if(!cats.includes(d.category))cats.push(d.category);});
+  // ensure every category that exists on any document is part of the ordered list
+  m.docs.forEach(d=>{ if(!m.cats.includes(d.category)) m.cats.push(d.category); });
+  const row=(c,i)=>{ const n=m.docs.filter(d=>d.category===c).length;
+    return `<div class="card" style="display:flex;align-items:center;gap:8px;padding:11px 12px;margin-bottom:9px">
+      <div style="display:flex;flex-direction:column;gap:3px">
+        <button class="ord-btn" ${i===0?'disabled':''} onclick="moveCat(${i},-1)" aria-label="Move up">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 15l6-6 6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button class="ord-btn" ${i===m.cats.length-1?'disabled':''} onclick="moveCat(${i},1)" aria-label="Move down">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </div>
+      <div class="pn" style="flex:1;min-width:0"><b>${esc(c)}</b><small style="display:block;font-size:12px;color:var(--txt-2);margin-top:1px">${n} document${n===1?'':'s'}</small></div>
+      <button class="icon-btn" onclick="editCat(${jsqa(c)})" aria-label="Edit">${PEN}</button></div>`; };
   openSheet(`
     <h3>Categories</h3>
-    ${cats.map(c=>{ const n=m.docs.filter(d=>d.category===c).length;
-      return `<div class="card person" onclick="editCat(${jsqa(c)})">
-        <div class="pn"><b>${esc(c)}</b><small>${n} document${n===1?'':'s'}</small></div>
-        <button class="icon-btn" aria-label="Edit">${PEN}</button></div>`; }).join('')}
+    ${m.cats.map((c,i)=>row(c,i)).join('')}
     <div class="sheet-actions">
       <button class="btn btn-glass" onclick="closeSheet()">Close</button>
       <button class="btn btn-pri" onclick="newCat()">＋ New category</button></div>`);
 }
-function newCat(){ const n=prompt('New category name'); if(!n||!n.trim())return;
-  const m=me(); const nm=n.trim();
+function moveCat(i,dir){ const m=me(); const j=i+dir;
+  if(j<0||j>=m.cats.length)return;
+  [m.cats[i],m.cats[j]]=[m.cats[j],m.cats[i]];
+  save(); manageCats(); renderDocs(); }
+function newCat(){
+  openSheet(`
+    <h3>New category</h3>
+    <label>Name</label><input id="f-cn" maxlength="60" placeholder="e.g. Specialized Training" autocomplete="off">
+    <div class="sheet-actions">
+      <button class="btn btn-glass" onclick="manageCats()">Back</button>
+      <button class="btn btn-pri" onclick="createCat()">Add</button></div>`);
+  setTimeout(()=>{ const el=document.getElementById('f-cn'); if(el)el.focus(); },60);
+}
+function createCat(){
+  const m=me(); const nm=document.getElementById('f-cn').value.trim();
+  if(!nm){ toast('Name is required'); return; }
   if(m.cats.includes(nm)){ toast('That category already exists'); return; }
-  m.cats.push(nm); save(); manageCats(); toast('Category added'); }
+  m.cats.push(nm); save(); manageCats(); renderDocs(); toast('Category added');
+}
+function newDocCatInline(){
+  // preserve any in-progress values from the document form so nothing is lost
+  const gv=id=>{const el=document.getElementById(id);return el?el.value:'';};
+  pendingDoc={ name:gv('f-dname'), number:gv('f-dnum'), notes:gv('f-dnotes'),
+    expiry:(document.getElementById('f-dexp')||{}).dataset?.v||'',
+    issued:(document.getElementById('f-diss')||{}).dataset?.v||'', status:docStatus };
+  openSheet(`
+    <h3>New category</h3>
+    <label>Name</label><input id="f-cn" maxlength="60" placeholder="e.g. Specialized Training" autocomplete="off">
+    <div class="sheet-actions">
+      <button class="btn btn-glass" onclick="cancelDocCatInline()">Cancel</button>
+      <button class="btn btn-pri" onclick="createDocCatInline()">Add</button></div>`);
+  setTimeout(()=>{ const el=document.getElementById('f-cn'); if(el)el.focus(); },60);
+}
+function cancelDocCatInline(){ editDoc(editingDocId); }   // reopen the doc editor, values preserved via pendingDoc, no new category
+function createDocCatInline(){
+  const m=me(); const nm=document.getElementById('f-cn').value.trim();
+  if(!nm){ toast('Name is required'); return; }
+  if(!m.cats.includes(nm)) m.cats.push(nm);
+  save(); pendingCat=nm; toast('Category added');
+  editDoc(editingDocId);
+}
 function editCat(cat){
   const m=me(); const n=m.docs.filter(d=>d.category===cat).length;
   openSheet(`
     <h3>Edit category</h3>
-    <label>Name</label><input id="f-cn" value="${esc(cat)}">
+    <label>Name</label><input id="f-cn" maxlength="60" value="${esc(cat)}">
     <p style="font-size:13px;color:var(--txt-3);margin-top:10px">${n} document${n===1?'':'s'} in this category — renaming moves them with it.</p>
     <div class="sheet-actions">
       <button class="btn btn-danger" onclick="delCat(${jsqa(cat)})">Delete</button>
@@ -1745,11 +1798,11 @@ function editService(id){
   const merge=(pre,vals)=>[...pre,...vals.filter(v=>!pre.includes(v))];
   openSheet(`
     <h3>${id?'Edit sea service':'Add sea service'}</h3>
-    <label>Vessel name</label><input id="f-sv" value="${esc(s.vessel)}" placeholder="e.g. SeaReady">
-    <label>Company</label><input id="f-sc" value="${esc(s.company)}">${chips('f-sc',uniq(m.service,'company'))}
-    <label>Vessel type</label><input id="f-st" value="${esc(s.vesselType)}" placeholder="LNG Carrier, Oil Tanker…">${chips('f-st',uniq(m.service,'vesselType'))}
-    <label>Rank</label><input id="f-sr" value="${esc(s.rank)}">${chips('f-sr',uniq(m.service,'rank'))}
-    <label>Seniority</label><input id="f-ss" value="${esc(s.seniority)}" placeholder="Senior Officer…">${chips('f-ss',merge(SEN_PRE,uniq(m.service,'seniority')),8)}
+    <label>Vessel name</label><input id="f-sv" maxlength="80" value="${esc(s.vessel)}" placeholder="e.g. SeaReady">
+    <label>Company</label><input id="f-sc" maxlength="80" value="${esc(s.company)}">${chips('f-sc',uniq(m.service,'company'))}
+    <label>Vessel type</label><input id="f-st" maxlength="60" value="${esc(s.vesselType)}" placeholder="LNG Carrier, Oil Tanker…">${chips('f-st',uniq(m.service,'vesselType'))}
+    <label>Rank</label><input id="f-sr" maxlength="60" value="${esc(s.rank)}">${chips('f-sr',uniq(m.service,'rank'))}
+    <label>Seniority</label><input id="f-ss" maxlength="60" value="${esc(s.seniority)}" placeholder="Senior Officer…">${chips('f-ss',merge(SEN_PRE,uniq(m.service,'seniority')),8)}
     <div class="switch-row ${svWatch?'on':''}" id="watchRow" onclick="toggleWatch()">
       <div class="sl"><b>Watch Officer</b><small>Count this contract as watchkeeping (OOW) time in the Officer Matrix</small></div>
       <div class="sw"></div></div>
@@ -1758,8 +1811,8 @@ function editService(id){
     </div><div>
       <label>Sign off <i>(blank = onboard)</i></label>${dateField('f-soff', s.signOff||'', 'Onboard')}
     </div></div>
-    <label>Sign off reason</label><input id="f-srsn" value="${esc(s.reason||'')}" placeholder="End of Contract…">${chips('f-srsn',merge(RSN_PRE,uniq(m.service,'reason')),12)}
-    <label>Notes <i>(optional)</i></label><input id="f-snotes" value="${esc(s.notes||'')}" placeholder="—">
+    <label>Sign off reason</label><input id="f-srsn" maxlength="60" value="${esc(s.reason||'')}" placeholder="End of Contract…">${chips('f-srsn',merge(RSN_PRE,uniq(m.service,'reason')),12)}
+    <label>Notes <i>(optional)</i></label><input id="f-snotes" maxlength="500" value="${esc(s.notes||'')}" placeholder="—">
     <div class="sheet-actions">
       ${id?`<button class="btn btn-danger" onclick="delService('${id}')">Delete</button>`:''}
       <button class="btn btn-glass" onclick="closeSheet()">Cancel</button>
@@ -1789,7 +1842,7 @@ function editPerson(id){
   const p=id?db.seafarers.find(x=>x.id===id):{name:''};
   openSheet(`
     <h3>${id?'Edit seafarer':'Add seafarer'}</h3>
-    <label>Name</label><input id="f-pn" value="${esc(p.name)}" placeholder="Full name">
+    <label>Name</label><input id="f-pn" maxlength="60" value="${esc(p.name)}" placeholder="Full name">
     <div class="sheet-actions">
       ${id?`<button class="btn btn-danger" onclick="delPerson('${id}')">Delete</button>`:''}
       <button class="btn btn-glass" onclick="closeSheet()">Cancel</button>
