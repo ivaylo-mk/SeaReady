@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  SeaReady v1.4.9 — Sea Service, Certificates and Documents Tracker for Seafarers
+  SeaReady v1.5.0 — Sea Service, Certificates and Documents Tracker for Seafarers
   Copyright (c) 2026 Ivaylo Krastev — https://ivaylokrastev.com
   All rights reserved. See LICENSE for terms.
 -->
@@ -162,6 +162,34 @@ h2.sec:first-child{margin-top:4px}
 .b-warn{background:linear-gradient(90deg,#FFD08A,var(--warn));color:var(--warn)}
 .b-soon{background:linear-gradient(90deg,#FFE9A3,#F5D96B);color:#E8C94F}
 .b-ok{background:linear-gradient(90deg,var(--ice),var(--glow));color:var(--glow)}
+/* career timeline */
+.tl-scroll{overflow-x:auto;overflow-y:hidden;margin-top:2px;scrollbar-width:none;
+  --fl:0px;--fr:0px;transition:--fl .35s ease,--fr .35s ease;
+  -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 var(--fl),#000 calc(100% - var(--fr)),transparent 100%);
+  mask-image:linear-gradient(90deg,transparent 0,#000 var(--fl),#000 calc(100% - var(--fr)),transparent 100%)}
+.tl-scroll::-webkit-scrollbar{display:none}
+.tl-inner{position:relative;min-width:100%}
+.tl-head{display:flex;justify-content:flex-start;margin-bottom:11px}
+.tl-seg-ctl{display:inline-flex;background:var(--chip);border-radius:99px;padding:3px;gap:2px}
+.tl-opt{font-family:inherit;font-size:11.5px;font-weight:600;color:var(--txt-2);background:none;border:none;
+  padding:5px 13px;border-radius:99px;cursor:pointer;transition:background .18s,color .18s}
+.tl-opt.on{background:var(--glass-2);color:var(--txt);box-shadow:0 1px 5px rgba(2,8,25,.18)}
+.tl-band{position:relative;height:34px;border-radius:9px;background:var(--chip);overflow:hidden}
+.tl-seg{position:absolute;top:0;bottom:0;border-radius:5px;min-width:5px;cursor:pointer;
+  border:1px solid rgba(10,20,40,.10);box-shadow:inset 0 1px 0 rgba(255,255,255,.18)}
+.tl-seg:hover{filter:brightness(1.09)}
+.tl-axis{position:relative;height:15px;margin-top:6px}
+.tl-tick{position:absolute;top:-2px;font-size:10px;font-weight:600;color:var(--txt-3);white-space:nowrap;letter-spacing:.3px}
+.tl-legend{display:flex;flex-wrap:wrap;gap:6px 10px;margin-top:14px}
+#timelineStats{margin-top:12px}
+.tl-leg{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--txt-2);
+  cursor:pointer;padding:3px 7px;margin:-3px -1px;border-radius:8px;transition:background .15s}
+.tl-leg:hover{background:var(--chip)}
+.tl-dot{width:11px;height:11px;border-radius:3px;flex:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.2)}
+.tl-sw-grid{display:grid;grid-template-columns:repeat(6,minmax(0,42px));gap:10px;margin-top:12px;justify-content:center}
+.tl-sw{aspect-ratio:1;border-radius:10px;border:2px solid transparent;cursor:pointer;padding:0;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.25)}
+.tl-sw.sel{border-color:var(--txt);box-shadow:0 0 0 2px var(--glass-brd-hi),inset 0 1px 0 rgba(255,255,255,.25)}
 .t-bad{color:var(--bad)} .t-warn{color:var(--warn)} .t-soon{color:#D9B93A} .t-ok{color:var(--info)}
 /* ---------- docs ---------- */
 .cat-block{margin-bottom:14px}
@@ -386,6 +414,9 @@ input::placeholder,textarea::placeholder{color:var(--txt-3);opacity:1}
   <div class="totals" id="dashTotals"></div>
   <h2 class="sec">Sea days per year</h2>
   <div class="card" id="yearCard"></div>
+  <h2 class="sec">Career timeline</h2>
+  <div class="card" id="timelineCard"></div>
+  <div class="totals" id="timelineStats"></div>
 </div>
 
 <div class="view" id="v-docs">
@@ -450,7 +481,7 @@ input::placeholder,textarea::placeholder{color:var(--txt-3);opacity:1}
     <a href="https://ivaylokrastev.com" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;margin-top:8px;color:var(--glow);text-decoration:none;font-size:12.5px;font-weight:600">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 4 5.7 4 9s-1.5 6.4-4 9c-2.5-2.6-4-5.7-4-9s1.5-6.4 4-9z"/></svg>
       ivaylokrastev.com</a>
-    <div style="font-size:11px;margin-top:10px;opacity:.75">Version 1.4.9</div>
+    <div style="font-size:11px;margin-top:10px;opacity:.75">Version 1.5.0</div>
   </div>
 </div>
 </main>
@@ -1181,6 +1212,136 @@ function renderDash(){
       <div class="track"><div class="bar b-ok" style="width:${w}%"></div></div>
       <div class="dv mono t-ok" style="width:118px">${d} d • ${(d/MONTH_D).toFixed(1)} mo</div></div>`; }).join('')
    : '<div class="empty" style="padding:16px">Add sea service records to see onboard time per year.</div>';
+  renderTimeline(m);
+}
+
+/* ---- career timeline ---- */
+const TL_COLORS=['#4DA3FF','#46D6A0','#FFB454','#FF5C6C','#8FA8CC','#B98CFF','#5FD0E8','#FF7AA8','#3FC7B4','#6E8BFF','#9BD84F','#E77FD4'];
+const TL_PXM=6;               // pixels per month at base scale (band scrolls when the career is long)
+let tlTypes=[];                // vessel types in first-appearance order, for the legend colour picker
+function renderTimeline(m){
+  const card=document.getElementById('timelineCard');
+  const stats=document.getElementById('timelineStats');
+  const svc=m.service.filter(s=>s.signOn);
+  if(!svc.length){
+    card.innerHTML='<div class="empty" style="padding:16px">Add sea service records to see your career timeline.</div>';
+    stats.style.display='none'; return;
+  }
+  stats.style.display='';
+  const mode=tlMode();
+  const on=s=>new Date(s.signOn+'T00:00:00');
+  const off=s=>s.signOff?new Date(s.signOff+'T00:00:00'):today();
+  let t0=on(svc[0]), t1=off(svc[0]);
+  svc.forEach(s=>{ const a=on(s),b=off(s); if(a<t0)t0=a; if(b>t1)t1=b; });
+  const span=Math.max(1,(t1-t0));
+  /* vessel-type colour map — user-chosen colours override the default palette, remembered per seafarer */
+  const types=[]; svc.forEach(s=>{ const t=s.vesselType||'—'; if(!types.includes(t))types.push(t); });
+  tlTypes=types;
+  const colorOf=t=>(m.typeColors&&m.typeColors[t])||TL_COLORS[types.indexOf(t)%TL_COLORS.length];
+  /* fixed scale: total width in px = span-in-months × TL_PXM (min-width:100% stretches short careers to fill) */
+  const monthMs=MONTH_D*DAY;
+  const totalW=Math.max(1,Math.round(span/monthMs*TL_PXM));
+  /* segments — draw oldest first so the most recent sits on top where they touch */
+  const segs=[...svc].sort((a,b)=>on(a)-on(b)).map(s=>{
+    const a=on(s),b=off(s);
+    const left=Math.max(0,(a-t0)/span*100);
+    const width=Math.max(0.6,(b-a)/span*100);
+    const mo=svDays(s)/MONTH_D;
+    const lbl=`${s.vessel||'—'}${s.rank?' · '+s.rank:''}`;
+    return `<div class="tl-seg" style="left:${left}%;width:${width}%;background:${colorOf(s.vesselType||'—')}" `+
+      `title="${esc(lbl)} · ${mo.toFixed(1)} mo" onclick="editService('${s.id}')"></div>`;
+  }).join('');
+  /* year ticks — detail view: every interior year (fixed scale keeps them well apart); overall view: fit-to-width, so step + min-space so labels never collide */
+  const y0=t0.getFullYear(), y1=t1.getFullYear();
+  let ticks='';
+  if(mode==='overall'){
+    const yrs=y1-y0, step=yrs<=10?1:yrs<=20?2:yrs<=30?3:5; let lastP=-99;
+    for(let y=y0;y<=y1;y+=step){
+      const p=(new Date(y,0,1)-t0)/span*100;
+      if(p<3||p>97) continue;
+      if(p-lastP<11) continue;
+      lastP=p;
+      ticks+=`<div class="tl-tick" style="left:${p}%;transform:translateX(-50%)">${y}</div>`;
+    }
+  } else {
+    for(let y=y0;y<=y1;y++){
+      const p=(new Date(y,0,1)-t0)/span*100;
+      if(p<=0||p>=100) continue;
+      const pxPos=p/100*totalW;
+      if(pxPos<22||pxPos>totalW-22) continue;
+      ticks+=`<div class="tl-tick" style="left:${p}%;transform:translateX(-50%)">${y}</div>`;
+    }
+  }
+  if(!ticks) ticks=`<div class="tl-tick" style="left:50%;transform:translateX(-50%)">${y0}</div>`;
+  /* legend + months per vessel type — each row taps to change that type's colour */
+  const moByType={}; svc.forEach(s=>{ const t=s.vesselType||'—'; moByType[t]=(moByType[t]||0)+svDays(s)/MONTH_D; });
+  const legend=types.map((t,i)=>`<div class="tl-leg" onclick="pickTypeColor(${i})" title="Tap to change colour"><span class="tl-dot" style="background:${colorOf(t)}"></span>${esc(t)} · ${moByType[t].toFixed(0)} mo</div>`).join('');
+  /* summary */
+  const seaDays=svc.reduce((a,s)=>a+svDays(s),0);
+  const spanDays=Math.round(span/DAY)+1;
+  const seaPct=Math.min(100,Math.round(seaDays/spanDays*100));
+  const vessels=new Set(svc.map(s=>(s.vessel||'').trim()).filter(Boolean)).size;
+  const avgTrip=svc.length?(seaDays/svc.length/MONTH_D):0;
+  const innerW = mode==='overall' ? '100%' : totalW+'px';
+  const toggle=`<div class="tl-head" style="display:none"><div class="tl-seg-ctl">`+
+    `<button class="tl-opt${mode==='overall'?' on':''}" onclick="setTlMode('overall')">Overall</button>`+
+    `<button class="tl-opt${mode!=='overall'?' on':''}" onclick="setTlMode('detail')">Detailed</button></div></div>`;
+  card.innerHTML=`${toggle}<div class="tl-scroll"><div class="tl-inner" style="width:${innerW}"><div class="tl-band">${segs}</div><div class="tl-axis">${ticks}</div></div></div><div class="tl-legend">${legend}</div>`;
+  stats.innerHTML=`
+    <div class="card"><div class="n">${seaPct}%</div><div class="l">Sea / leave</div></div>
+    <div class="card"><div class="n">${vessels}</div><div class="l">Vessels</div></div>
+    <div class="card"><div class="n">${avgTrip.toFixed(1)} mo</div><div class="l">Average trip</div></div>`;
+  /* scroll/drag wiring: mouse drag-to-pan (touch scrolls natively); the contract click is suppressed after a real drag */
+  const sc=card.querySelector('.tl-scroll');
+  const head=card.querySelector('.tl-head');
+  if(sc){
+    sc.addEventListener('scroll',()=>updateFade(sc));
+    let down=false, sx=0, sl=0, moved=0;
+    sc.addEventListener('pointerdown',e=>{
+      if(e.pointerType!=='mouse') return;
+      if(sc.scrollWidth<=sc.clientWidth) return;
+      down=true; moved=0; sx=e.clientX; sl=sc.scrollLeft; sc.style.cursor='grabbing';
+      try{ sc.setPointerCapture(e.pointerId); }catch(_){}
+    });
+    sc.addEventListener('pointermove',e=>{ if(!down) return; const dx=e.clientX-sx; if(Math.abs(dx)>moved) moved=Math.abs(dx); sc.scrollLeft=sl-dx; });
+    const end=()=>{ if(down){ down=false; sc.style.cursor = sc.scrollWidth>sc.clientWidth?'grab':''; } };
+    sc.addEventListener('pointerup',end);
+    sc.addEventListener('pointercancel',end);
+    sc.addEventListener('click',e=>{ if(moved>6){ e.preventDefault(); e.stopPropagation(); } }, true);
+    const settle=()=>{
+      const cw=sc.clientWidth;
+      /* the toggle only matters when Detailed would actually scroll — otherwise the two views are identical */
+      if(head) head.style.display = (totalW > cw+4) ? '' : 'none';
+      if(mode!=='overall'){ sc.scrollLeft=sc.scrollWidth; sc.style.cursor = (sc.scrollWidth>cw+4)?'grab':''; }
+      else sc.style.cursor='';
+      updateFade(sc);
+    };
+    (window.requestAnimationFrame||setTimeout)(settle);
+  }
+}
+
+/* career-timeline view mode — 'detail' (fixed-scale scroll) or 'overall' (fit whole career), remembered globally */
+function tlMode(){ return (typeof db!=='undefined' && db && db.tlMode==='detail') ? 'detail' : 'overall'; }
+function setTlMode(mode){ if(typeof db!=='undefined' && db){ db.tlMode=(mode==='detail'?'detail':'overall'); save(); } const m=me(); if(m) renderTimeline(m); }
+
+/* legend colour picker — 12 palette-matched swatches, choice remembered per vessel type */
+function pickTypeColor(i){
+  const m=me(); if(!m)return;
+  const type=tlTypes[i]; if(type==null)return;
+  const cur=(m.typeColors&&m.typeColors[type])||TL_COLORS[i%TL_COLORS.length];
+  const swatches=TL_COLORS.map(c=>`<button class="tl-sw${c.toLowerCase()===cur.toLowerCase()?' sel':''}" style="background:${c}" onclick="setTypeColor(${i},'${c}')" aria-label="${c}"></button>`).join('');
+  openSheet(`<h3>Colour · ${esc(type)}</h3><div class="tl-sw-grid">${swatches}</div>`+
+    `<button class="btn btn-pri btn-block" style="margin-top:14px" onclick="resetTypeColor(${i})">Reset to default</button>`);
+}
+function setTypeColor(i,c){
+  const m=me(); const type=tlTypes[i]; if(!m||type==null)return;
+  m.typeColors=m.typeColors||{}; m.typeColors[type]=c; save();
+  closeSheet(); renderTimeline(m);
+}
+function resetTypeColor(i){
+  const m=me(); const type=tlTypes[i]; if(!m||type==null)return;
+  if(m.typeColors){ delete m.typeColors[type]; save(); }
+  closeSheet(); renderTimeline(m);
 }
 
 /* ---- documents ---- */

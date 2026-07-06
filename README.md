@@ -7,7 +7,7 @@
 <p align="center">
 	<a href="https://seaready.ivaylokrastev.com"><img src="https://img.shields.io/badge/PWA-Ready-blue" alt="PWA" /></a>
 	<a href="https://seaready.ivaylokrastev.com"><img src="https://img.shields.io/badge/Offline-Ready-blue" alt="Offline" /></a>
-	<a href="https://seaready.ivaylokrastev.com"><img src="https://img.shields.io/badge/Version-1.4.9-blue" alt="Version" /></a>
+	<a href="https://seaready.ivaylokrastev.com"><img src="https://img.shields.io/badge/Version-1.5.0-blue" alt="Version" /></a>
 </p>
 
 **Sea Service, Certificates and Documents Tracker for Seafarers**
@@ -24,6 +24,7 @@ SeaReady keeps a seafarer's documents, STCW certificates and sea service records
 * **Reminders** — notifications at 6 months and 3 months before expiry, and on expiry
 * **Certificate scanning** — photograph a certificate and SeaReady reads the name and expiry date for you (on-device OCR, works offline)
 * **Sea service records** — contracts with rank, seniority, watchkeeping flag, filters and live totals in months and years
+* **Career timeline** — see your whole career at a glance, with each contract colour-coded by vessel type and the gaps showing your leave
 * **Officer Matrix** — time with operator, in rank, on vessel type, and as watch officer, calculated live; operator groups supported
 * **PDF reports** — documents, sea service and matrix as clean PDF files
 * **Multi-seafarer** — track several people on one device
