@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  SeaReady v1.5.1 — Sea Service, Certificates and Documents Tracker for Seafarers
+  SeaReady v1.5.2 — Sea Service, Certificates and Documents Tracker for Seafarers
   Copyright (c) 2026 Ivaylo Krastev — https://ivaylokrastev.com
   All rights reserved. See LICENSE for terms.
 -->
@@ -482,7 +482,7 @@ input::placeholder,textarea::placeholder{color:var(--txt-3);opacity:1}
     <a href="https://ivaylokrastev.com" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;margin-top:8px;color:var(--glow);text-decoration:none;font-size:12.5px;font-weight:600">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 4 5.7 4 9s-1.5 6.4-4 9c-2.5-2.6-4-5.7-4-9s1.5-6.4 4-9z"/></svg>
       ivaylokrastev.com</a>
-    <div style="font-size:11px;margin-top:10px;opacity:.75">Version 1.5.1</div>
+    <div style="font-size:11px;margin-top:10px;opacity:.75">Version 1.5.2</div>
   </div>
 </div>
 </main>
@@ -2146,6 +2146,7 @@ function loadScript(src){ return new Promise((res,rej)=>{ const s=document.creat
   s.src=src; s.onload=res; s.onerror=()=>rej(new Error('offline')); document.head.appendChild(s); }); }
 async function pdfReport(kind){
   const m=me(); if(!m){ toast('Add a seafarer first'); return; }
+  try{
   const gen=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
   const stamp=new Date().toISOString().slice(0,10);
   const doc=new window.jspdf.jsPDF({unit:'pt',format:'a4'});
@@ -2201,7 +2202,11 @@ async function pdfReport(kind){
     const f=mxF||mxDefaults(m);
     const calc=fn=>m.service.filter(fn).reduce((a,s)=>a+svDays(s),0);
     const c=f.company,r=f.rank,t=f.vesselType;
-    let opDays=0,opWho=c?mxCompanyLabel(m):'All \u2014 whole career',opSince='';
+    let opDays=0,opSince='';
+    let opWho;
+    if(!c) opWho='All \u2014 whole career';
+    else if(c.startsWith('g:')){ const g=(m.groups||[]).find(x=>'g:'+x.id===c); opWho=g?g.name:'All'; }
+    else opWho=c;
     { let members=null;
       if(c){ if(c.startsWith('g:')){ const g=(m.groups||[]).find(x=>'g:'+x.id===c); members=new Set(g?g.companies:[]); }
         else members=new Set([c]); }
@@ -2230,6 +2235,7 @@ async function pdfReport(kind){
   }
   doc.save(fname);
   toast('PDF saved');
+  }catch(e){ toast('Could not create the PDF'); }
 }
 
 /* ================= EXPORT / IMPORT ================= */

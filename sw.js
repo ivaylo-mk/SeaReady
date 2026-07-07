@@ -1,4 +1,4 @@
-const CACHE='seaready-v38';
+const CACHE='seaready-v39';
 /* App shell — small and critical. Must cache for the app to start offline. */
 const SHELL=['./','./index.html','./manifest.json',
   './icon-192.png','./icon-512.png','./icon-180.png','./favicon-192.png','./favicon-96.png'];
