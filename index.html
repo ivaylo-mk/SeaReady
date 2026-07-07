@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  SeaReady v1.5.0 — Sea Service, Certificates and Documents Tracker for Seafarers
+  SeaReady v1.5.1 — Sea Service, Certificates and Documents Tracker for Seafarers
   Copyright (c) 2026 Ivaylo Krastev — https://ivaylokrastev.com
   All rights reserved. See LICENSE for terms.
 -->
@@ -164,7 +164,8 @@ h2.sec:first-child{margin-top:4px}
 .b-ok{background:linear-gradient(90deg,var(--ice),var(--glow));color:var(--glow)}
 /* career timeline */
 .tl-scroll{overflow-x:auto;overflow-y:hidden;margin-top:2px;scrollbar-width:none;
-  --fl:0px;--fr:0px;transition:--fl .35s ease,--fr .35s ease;
+  --fl:0px;--fr:0px;transition:--fl .35s ease,--fr .35s ease}
+.tl-scroll.faded{
   -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 var(--fl),#000 calc(100% - var(--fr)),transparent 100%);
   mask-image:linear-gradient(90deg,transparent 0,#000 var(--fl),#000 calc(100% - var(--fr)),transparent 100%)}
 .tl-scroll::-webkit-scrollbar{display:none}
@@ -481,7 +482,7 @@ input::placeholder,textarea::placeholder{color:var(--txt-3);opacity:1}
     <a href="https://ivaylokrastev.com" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;margin-top:8px;color:var(--glow);text-decoration:none;font-size:12.5px;font-weight:600">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 4 5.7 4 9s-1.5 6.4-4 9c-2.5-2.6-4-5.7-4-9s1.5-6.4 4-9z"/></svg>
       ivaylokrastev.com</a>
-    <div style="font-size:11px;margin-top:10px;opacity:.75">Version 1.5.0</div>
+    <div style="font-size:11px;margin-top:10px;opacity:.75">Version 1.5.1</div>
   </div>
 </div>
 </main>
@@ -1308,11 +1309,17 @@ function renderTimeline(m){
     sc.addEventListener('pointerup',end);
     sc.addEventListener('pointercancel',end);
     sc.addEventListener('click',e=>{ if(moved>6){ e.preventDefault(); e.stopPropagation(); } }, true);
+    let tries=0;
     const settle=()=>{
       const cw=sc.clientWidth;
+      /* before layout, clientWidth is 0 — retry rather than acting on a bogus measurement (which showed an empty toggle bar) */
+      if(cw===0 && tries<12){ tries++; requestAnimationFrame(settle); return; }
+      const scrollable = cw>0 && sc.scrollWidth > cw+4;
+      /* the fade mask (a compositing layer) is only applied while actually scrolling — avoids a paint artifact over the card when it isn't needed */
+      sc.classList.toggle('faded', scrollable);
       /* the toggle only matters when Detailed would actually scroll — otherwise the two views are identical */
-      if(head) head.style.display = (totalW > cw+4) ? '' : 'none';
-      if(mode!=='overall'){ sc.scrollLeft=sc.scrollWidth; sc.style.cursor = (sc.scrollWidth>cw+4)?'grab':''; }
+      if(head) head.style.display = (cw>0 && totalW > cw+4) ? '' : 'none';
+      if(mode!=='overall' && cw>0){ sc.scrollLeft=sc.scrollWidth; sc.style.cursor = scrollable?'grab':''; }
       else sc.style.cursor='';
       updateFade(sc);
     };
@@ -2330,6 +2337,27 @@ go('dash');
 if(!INSTALLED) setTimeout(showInstallSheet, 400);
 if('serviceWorker' in navigator && location.protocol!=='file:')
   navigator.serviceWorker.register('sw.js').then(()=>registerPeriodic()).catch(()=>{});
+/* keep the full offline asset set (shell + OCR) verified and repaired whenever online, so going offline never surprises the user */
+let _offlineRetry=null;
+function ensureOfflineAssets(){
+  if(!('serviceWorker' in navigator) || !navigator.onLine) return;
+  navigator.serviceWorker.ready.then(reg=>{
+    const sw=reg.active||navigator.serviceWorker.controller;
+    if(sw) sw.postMessage({type:'ensure-offline'});
+  }).catch(()=>{});
+}
+function scheduleOfflineCheck(delay){ clearTimeout(_offlineRetry); _offlineRetry=setTimeout(ensureOfflineAssets, delay); }
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.addEventListener('message',ev=>{
+    if(ev.data && ev.data.type==='offline-status' && ev.data.remaining>0 && navigator.onLine)
+      scheduleOfflineCheck(30000);        // some assets still missing (poor signal) — try again soon
+  });
+  scheduleOfflineCheck(2500);                                        // shortly after load
+  window.addEventListener('online', ()=>scheduleOfflineCheck(1500)); // as soon as a connection returns
+  document.addEventListener('visibilitychange', ()=>{               // when the app is reopened / brought to front
+    if(document.visibilityState==='visible' && navigator.onLine) scheduleOfflineCheck(1000);
+  });
+}
 writeSnapshot();
 if(INSTALLED){
   setTimeout(()=>notifCheck(true), 1200);

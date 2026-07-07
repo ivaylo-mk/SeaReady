@@ -1,10 +1,17 @@
-const CACHE='seaready-v35';
-const CORE=['./','./index.html','./manifest.json','./icon-192.png','./icon-512.png','./icon-180.png','./favicon-192.png','./favicon-96.png',
-  './ocr/tesseract.min.js','./ocr/worker.min.js',
-  './ocr/tesseract-core-simd-lstm.wasm.js','./ocr/tesseract-core-lstm.wasm.js',
-  './ocr/eng.traineddata.gz'];
+const CACHE='seaready-v38';
+/* App shell — small and critical. Must cache for the app to start offline. */
+const SHELL=['./','./index.html','./manifest.json',
+  './icon-192.png','./icon-512.png','./icon-180.png','./favicon-192.png','./favicon-96.png'];
+/* OCR engine — large (~11MB). Cached best-effort so a download failure can NEVER block offline startup. */
+const EXTRAS=['./ocr/tesseract.min.js','./ocr/worker.min.js',
+  './ocr/tesseract-core-simd-lstm.wasm.js','./ocr/tesseract-core-lstm.wasm.js','./ocr/eng.traineddata.gz'];
 self.addEventListener('install',e=>{
-  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting()));
+  e.waitUntil((async()=>{
+    const c=await caches.open(CACHE);
+    await c.addAll(SHELL);                                  // must succeed → guarantees offline start
+    await Promise.allSettled(EXTRAS.map(u=>c.add(u)));      // best-effort; missing OCR won't break the app
+    await self.skipWaiting();
+  })());
 });
 self.addEventListener('activate',e=>{
   e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));
@@ -12,12 +19,19 @@ self.addEventListener('activate',e=>{
 self.addEventListener('fetch',e=>{
   if(e.request.method!=='GET')return;
   e.respondWith(
-    caches.match(e.request,{ignoreSearch:true}).then(hit=>hit||fetch(e.request).then(res=>{
-      if(res.ok&&(e.request.url.startsWith(self.location.origin)||e.request.url.includes('jsdelivr'))){
-        const clone=res.clone(); caches.open(CACHE).then(c=>c.put(e.request,clone));
-      }
-      return res;
-    }).catch(()=>caches.match('./index.html')))
+    caches.match(e.request,{ignoreSearch:true}).then(hit=>{
+      if(hit) return hit;
+      return fetch(e.request).then(res=>{
+        if(res.ok && e.request.url.startsWith(self.location.origin)){
+          const clone=res.clone(); caches.open(CACHE).then(c=>c.put(e.request,clone));
+        }
+        return res;
+      }).catch(()=>{
+        /* offline & not cached: serve the app shell for any navigation so the app still opens */
+        if(e.request.mode==='navigate') return caches.match('./index.html',{ignoreSearch:true});
+        return caches.match('./index.html',{ignoreSearch:true});
+      });
+    })
   );
 });
 /* ---- background reminder check (Android/Chrome periodic sync) ---- */
@@ -57,6 +71,26 @@ async function backgroundCheck(){
   if(due.length){ snap.seen=seen; await idbSet('snapshot',snap); }
 }
 self.addEventListener('periodicsync',e=>{ if(e.tag==='seaready-check') e.waitUntil(backgroundCheck()); });
+/* ---- verify EVERY offline asset is cached; re-download any that are missing (called by the app when online) ---- */
+async function ensureCached(){
+  const c=await caches.open(CACHE);
+  const all=[...SHELL, ...EXTRAS];
+  const missing=[];
+  for(const u of all){ const hit=await c.match(u,{ignoreSearch:true}); if(!hit) missing.push(u); }
+  let remaining=0;
+  if(missing.length){
+    const res=await Promise.allSettled(missing.map(u=>c.add(u)));
+    remaining=res.filter(r=>r.status==='rejected').length;
+  }
+  return {total:all.length, missing:missing.length, cached:missing.length-remaining, remaining};
+}
+self.addEventListener('message',e=>{
+  if(e.data && e.data.type==='ensure-offline'){
+    e.waitUntil(ensureCached().then(r=>{
+      if(e.source && e.source.postMessage) e.source.postMessage({type:'offline-status', ...r});
+    }));
+  }
+});
 self.addEventListener('notificationclick',e=>{
   e.notification.close();
   e.waitUntil(clients.matchAll({type:'window',includeUncontrolled:true}).then(list=>{
