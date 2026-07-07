@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  SeaReady v1.5.2 — Sea Service, Certificates and Documents Tracker for Seafarers
+  SeaReady v1.5.3 — Sea Service, Certificates and Documents Tracker for Seafarers
   Copyright (c) 2026 Ivaylo Krastev — https://ivaylokrastev.com
   All rights reserved. See LICENSE for terms.
 -->
@@ -482,7 +482,7 @@ input::placeholder,textarea::placeholder{color:var(--txt-3);opacity:1}
     <a href="https://ivaylokrastev.com" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;margin-top:8px;color:var(--glow);text-decoration:none;font-size:12.5px;font-weight:600">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 4 5.7 4 9s-1.5 6.4-4 9c-2.5-2.6-4-5.7-4-9s1.5-6.4 4-9z"/></svg>
       ivaylokrastev.com</a>
-    <div style="font-size:11px;margin-top:10px;opacity:.75">Version 1.5.2</div>
+    <div style="font-size:11px;margin-top:10px;opacity:.75">Version 1.5.3</div>
   </div>
 </div>
 </main>
@@ -1903,24 +1903,64 @@ function bestSegment(l){
   const eng=segs.filter(looksEnglish);
   return (eng.length?eng:segs).sort((a,b)=>b.length-a.length)[0]||l;   // bilingual "местен / ENGLISH" -> keep the English part
 }
-function guessName(text){
-  const lines=text.split(/\n+/).map(l=>bestSegment(l.trim()))
-    .filter(l=>l.length>5&&l.length<80).filter(looksEnglish);
+function titleCaseTitle(s){
+  if(!s) return s;
+  const SMALL=new Set(['of','and','the','for','to','on','in','a','an','or','at','by','with','from','as']);
+  const ACR=new Set(['GMDSS','ECDIS','ARPA','STCW','IGF','LNG','LPG','DP','HV','VOC','SIRE','COLREG','COLREGS','SAR','IMO','SOLAS','MARPOL','ISPS','ISM','GOC','ROC','SSO','IGC','IBC','OOW','ID']);
+  return s.toLowerCase().split(/\s+/).map((w,i)=>{
+    const bare=w.replace(/[^a-z0-9]/gi,'').toUpperCase();
+    if(bare && ACR.has(bare)) return w.toUpperCase();          // keep known acronyms upper
+    if(i>0 && SMALL.has(w)) return w;                          // small connective words stay lower (never first)
+    return w.replace(/[a-z]/i, c=>c.toUpperCase());            // capitalise first letter (skips leading punctuation)
+  }).join(' ');
+}
+/* flatten Tesseract output into {text, h} lines so we can weight by font size (bigger text = more likely the title) */
+function ocrLines(data){
+  let ls=[];
+  if(Array.isArray(data&&data.lines)&&data.lines.length) ls=data.lines;
+  else if(Array.isArray(data&&data.blocks)) (data.blocks||[]).forEach(b=>(b.paragraphs||[]).forEach(p=>(p.lines||[]).forEach(l=>ls.push(l))));
+  return ls.map(L=>({text:L.text||'', h:(L.bbox?(L.bbox.y1-L.bbox.y0):0)}));
+}
+function guessName(text, sized){
+  let entries;
+  if(sized && sized.length && sized.some(s=>s.h>0))
+    entries=sized.map(s=>({raw:bestSegment((s.text||'').trim()), h:s.h||0}));
+  else
+    entries=text.split(/\n+/).map(l=>({raw:bestSegment(l.trim()), h:0}));
+  entries=entries.filter(o=>o.raw.length>5&&o.raw.length<80&&looksEnglish(o.raw));
+  if(!entries.length) return '';
+  const maxH=Math.max(1,...entries.map(o=>o.h));
   const kw=/certificat|proficien|competen|passport|endorse|training|licen[cs]e|discharge|medical|vaccin|course|fire|safety|tanker|survival|rescue|security|bridge|radar|ecdis|gmdss|first aid/i;
   const noisy=/^(no\.?|number|date|issued|expiry|expires|valid|this is to certify|government|republic|administration|regulation|has been|the undersigned)/i;
-  let best='',bestScore=0;
   const engWords=/\b(of|and|the|in|for|to|on)\b/i;
-  lines.forEach((l,i)=>{ let sc=0;
+  let best='',bestScore=0;
+  entries.forEach((o,i)=>{ const l=o.raw; let sc=0;
     sc+=knownTitleScore(l);                                    // strong boost for standard STCW / document titles
     if(kw.test(l))sc+=5;
     if(engWords.test(l))sc+=2;                                 // English function words: absent in Croatian/Italian/Spanish titles
     if(/^[A-Z0-9 \-\u2013&().,'\/]+$/.test(l)&&/[A-Z]{3}/.test(l))sc+=3;
     if(i<10)sc+=2;
+    if(maxH>1&&o.h>0){ const rel=o.h/maxH;                     // font-size weighting: the big title should win over subtitles
+      if(rel>=0.9)sc+=5; else if(rel>=0.75)sc+=3; else if(rel>=0.55)sc+=1; }
     if(/^certificate of (proficiency|competency|training)$/i.test(l.trim()))sc-=4;   // generic header: prefer the subject line beneath it
     if(noisy.test(l))sc-=6;
     if(/\d{4}/.test(l))sc-=2;
     if(sc>bestScore){bestScore=sc;best=l;} });
   return best.replace(/\s{2,}/g,' ').replace(/^\W+|\W+$/g,'');
+}
+/* decide issue vs expiry: a lone / unlabelled date is almost always an ISSUE date on an unlimited document */
+function resolveDocDates(text){
+  const dates=[...new Set(parseDates(text))];                 // ascending, unique
+  if(/unlimited|indefinite|permanent|no\s+expiry|does\s+not\s+expire|valid\s+for\s+life|lifetime/i.test(text))
+    return {status:'unlimited', issue:labeledIssue(text)||dates[0]||'', expiry:''};
+  const labExp=labeledExpiry(text), labIss=labeledIssue(text);
+  if(labExp) return {status:'date', expiry:labExp, issue:labIss||(dates[0]&&dates[0]!==labExp?dates[0]:'')};
+  const DAY=86400000, gap=(a,b)=>Math.abs((new Date(b)-new Date(a))/DAY);
+  if(dates.length>=2 && gap(dates[0],dates[dates.length-1])>120) // two well-separated dates ⇒ issue + expiry
+    return {status:'date', expiry:dates[dates.length-1], issue:labIss||dates[0]};
+  if(labIss||dates.length===1)                                 // only an issue date ⇒ no expiry (unlimited)
+    return {status:'unlimited', issue:labIss||dates[0]||'', expiry:''};
+  return {status:'unknown', issue:labIss||'', expiry:''};
 }
 async function runScan(input){
   const file=input.files[0]; if(!file)return;
@@ -1958,17 +1998,14 @@ async function runScan(input){
       else msg.textContent='✓ Passport detected — please pick the expiry date manually.';
       return;
     }
-    const dates=parseDates(text);
-    const unlimited=/unlimited|indefinite|permanent|no\s+expiry|does\s+not\s+expire/i.test(text);
-    const name=guessName(text);
+    const name=titleCaseTitle(guessName(text, ocrLines(data)));
     if(name && !document.getElementById('f-dname').value) document.getElementById('f-dname').value=name;
-    if(unlimited){ setDocStatus('unlimited');
-      msg.textContent='✓ Read: '+(name||'document')+' — unlimited validity. Check and save.'; }
-    else if(dates.length){ setDocStatus('date');
-      const exp=labeledExpiry(text)||dates[dates.length-1];
-      setDateField('f-dexp',exp);
-      msg.textContent='✓ Found expiry '+fmtDate(exp)+(name?' for "'+name+'"':'')+'. Check and save.'; }
-    else if(name) msg.textContent='✓ Read the name, but no date found — pick the expiry manually.';
+    const r=resolveDocDates(text);
+    if(r.status==='unlimited'){ setDocStatus('unlimited'); if(r.issue) setDateField('f-diss',r.issue);
+      msg.textContent='✓ Read: '+(name||'document')+' — only an issue date found, so set as no expiry. Change if it does expire.'; }
+    else if(r.status==='date'){ setDocStatus('date'); setDateField('f-dexp',r.expiry); if(r.issue) setDateField('f-diss',r.issue);
+      msg.textContent='✓ Found expiry '+fmtDate(r.expiry)+(name?' for "'+name+'"':'')+'. Check and save.'; }
+    else if(name) msg.textContent='✓ Read the name, but no clear date — pick the expiry manually.';
     else msg.textContent='Could not read this photo. Try better light and fill the frame with the document.';
   }catch(err){
     msg.textContent = err.message==='offline'

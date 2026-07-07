@@ -1,4 +1,4 @@
-const CACHE='seaready-v39';
+const CACHE='seaready-v40';
 /* App shell — small and critical. Must cache for the app to start offline. */
 const SHELL=['./','./index.html','./manifest.json',
   './icon-192.png','./icon-512.png','./icon-180.png','./favicon-192.png','./favicon-96.png'];
@@ -18,6 +18,19 @@ self.addEventListener('activate',e=>{
 });
 self.addEventListener('fetch',e=>{
   if(e.request.method!=='GET')return;
+  /* App navigations: serve the cached shell FIRST — the fastest, most reliable offline start,
+     so the service worker wins the cold-start race against Chrome's offline page more often. */
+  if(e.request.mode==='navigate'){
+    e.respondWith(
+      caches.match('./index.html',{ignoreSearch:true})
+        .then(shell=> shell || caches.match('./',{ignoreSearch:true}))
+        .then(shell=> shell || caches.match(e.request,{ignoreSearch:true}))
+        .then(cached=> cached || fetch(e.request))
+        .catch(()=> caches.match('./index.html',{ignoreSearch:true}))
+    );
+    return;
+  }
+  /* Everything else: cache-first, then network (and cache it for next time). */
   e.respondWith(
     caches.match(e.request,{ignoreSearch:true}).then(hit=>{
       if(hit) return hit;
@@ -26,11 +39,7 @@ self.addEventListener('fetch',e=>{
           const clone=res.clone(); caches.open(CACHE).then(c=>c.put(e.request,clone));
         }
         return res;
-      }).catch(()=>{
-        /* offline & not cached: serve the app shell for any navigation so the app still opens */
-        if(e.request.mode==='navigate') return caches.match('./index.html',{ignoreSearch:true});
-        return caches.match('./index.html',{ignoreSearch:true});
-      });
+      }).catch(()=> caches.match('./index.html',{ignoreSearch:true}));
     })
   );
 });
