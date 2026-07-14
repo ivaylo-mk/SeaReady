@@ -1,4 +1,4 @@
-const CACHE='seaready-v46';
+const CACHE='seaready-v47';
 /* OCR engine lives in its OWN, UNVERSIONED cache so it survives shell updates.
    Bumping CACHE re-downloads only the small shell; the ~11MB engine is fetched once.
    Bump ASSETS only when the OCR files themselves change. */
