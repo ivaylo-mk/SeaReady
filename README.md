@@ -7,7 +7,7 @@
 <p align="center">
 	<a href="https://seaready.ivaylokrastev.com"><img src="https://img.shields.io/badge/PWA-Ready-blue" alt="PWA" /></a>
 	<a href="https://seaready.ivaylokrastev.com"><img src="https://img.shields.io/badge/Offline-Ready-blue" alt="Offline" /></a>
-	<a href="https://seaready.ivaylokrastev.com"><img src="https://img.shields.io/badge/Version-1.5.10-blue" alt="Version" /></a>
+	<a href="https://seaready.ivaylokrastev.com"><img src="https://img.shields.io/badge/Version-1.5.12-blue" alt="Version" /></a>
 </p>
 
 **Sea Service, Certificates and Documents Tracker for Seafarers**
