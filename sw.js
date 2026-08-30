@@ -1,4 +1,4 @@
-const CACHE='seaready-v49';
+const CACHE='seaready-v50';
 /* OCR engine lives in its OWN, UNVERSIONED cache so it survives shell updates.
    Bumping CACHE re-downloads only the small shell; the ~11MB engine is fetched once.
    Bump ASSETS only when the OCR files themselves change. */
@@ -22,21 +22,25 @@ async function addMissing(cache,urls){
 self.addEventListener('install',e=>{
   e.waitUntil((async()=>{
     const c=await caches.open(CACHE);
-    await c.addAll(SHELL);                                  // must succeed → guarantees offline start
-    const a=await caches.open(ASSETS);                      // separate cache: survives shell version bumps
-    await addMissing(a,EXTRAS);                             // best-effort AND skips anything already cached
-    await self.skipWaiting();
+    await c.addAll(SHELL);      // small + critical: this alone guarantees the app can start offline
+    await self.skipWaiting();   // activate NOW. The ~11MB OCR engine must never gate activation:
+                                // an install that waits on it can be interrupted (app closed, worker
+                                // evicted, connection dropped) and then the worker never activates,
+                                // leaving the app with no offline support at all.
   })());
 });
 self.addEventListener('activate',e=>{
   e.waitUntil((async()=>{
     const ks=await caches.keys();
     await Promise.all(ks.filter(k=>!KEEP.includes(k)).map(k=>caches.delete(k)));
-    /* FIX 3: self-healing no longer depends solely on the page sending the
-       'ensure-offline' message — run it at least once per SW version here.
-       The message path still works and remains the retry mechanism. */
-    await ensureCached().catch(()=>{});
-    await self.clients.claim();
+    /* Repair the shell if site data was cleared — small and quick, so offline
+       startup is restored before we take control. */
+    await ensureShell().catch(()=>{});
+    await self.clients.claim();          // control pages ASAP: offline works from this moment
+    /* The OCR engine is fetched in the background and deliberately NOT awaited,
+       so a slow or interrupted 11MB download can never delay activation. The
+       page's periodic 'ensure-offline' message finishes/retries it. */
+    ensureCached().catch(()=>{});
   })());
 });
 self.addEventListener('fetch',e=>{
@@ -122,6 +126,11 @@ async function backgroundCheck(){
 self.addEventListener('periodicsync',e=>{ if(e.tag==='seaready-check') e.waitUntil(backgroundCheck()); });
 /* ---- verify EVERY offline asset is cached; re-download any that are missing
    (runs on activate, and on demand via the 'ensure-offline' message) ---- */
+/* shell only: the few small files the app needs to open offline */
+async function ensureShell(){
+  const c=await caches.open(CACHE);
+  return addMissing(c,SHELL);
+}
 async function ensureCached(){
   const c=await caches.open(CACHE), a=await caches.open(ASSETS);
   const s=await addMissing(c,SHELL);            // small: shell
