@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  SeaReady v1.5.13 — Sea Service, Certificates and Documents Tracker for Seafarers
+  SeaReady v1.5.14 — Sea Service, Certificates and Documents Tracker for Seafarers
   Copyright (c) 2026 Ivaylo Krastev — https://ivaylokrastev.com
   All rights reserved. See LICENSE for terms.
 -->
@@ -178,6 +178,16 @@ h2.sec:first-child{margin-top:4px}
 .b-ok{background:linear-gradient(90deg,var(--ice),var(--glow));color:var(--glow)}
 /* career timeline */
 #timelineCard{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+/* offline-readiness indicator (footer) */
+.off-badge{display:none;align-items:center;justify-content:center;gap:7px;
+  margin:14px 0 0;
+  font-size:11.5px;font-weight:600;color:var(--txt-3);letter-spacing:.2px}
+.off-badge.show{display:flex}
+.off-dot{width:8px;height:8px;border-radius:50%;background:#8FA8CC;flex:none;
+  box-shadow:0 0 0 3px rgba(143,168,204,.18)}
+.off-badge.ok .off-dot{background:#46D6A0;box-shadow:0 0 0 3px rgba(70,214,160,.18)}
+.off-badge.part .off-dot{background:#FFB454;box-shadow:0 0 0 3px rgba(255,180,84,.18)}
+.off-badge.no .off-dot{background:#FF5C6C;box-shadow:0 0 0 3px rgba(255,92,108,.18)}
 .tl-scroll.tl-fit{overflow:visible}
 .tl-scroll{overflow-x:auto;overflow-y:hidden;margin-top:2px;scrollbar-width:none;
   --fl:0px;--fr:0px;transition:--fl .35s ease,--fr .35s ease}
@@ -498,7 +508,9 @@ input::placeholder,textarea::placeholder{color:var(--txt-3);opacity:1}
     <a href="https://ivaylokrastev.com" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;margin-top:8px;color:var(--glow);text-decoration:none;font-size:12.5px;font-weight:600">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><g clip-path="url(#globe__clip0_17007_17104)"><path fill-rule="evenodd" clip-rule="evenodd" d="M0.25 12C0.25 5.51065 5.51065 0.25 12 0.25C18.4891 0.25 23.7497 5.51033 23.75 11.9994C23.75 11.9992 23.75 11.9996 23.75 11.9994C23.75 12.0002 23.75 12.0016 23.75 12.0024C23.7487 18.4907 18.4885 23.75 12 23.75C5.51065 23.75 0.25 18.4893 0.25 12ZM1.77702 11.25C2.08691 6.96476 5.03122 3.40971 8.99828 2.19654C8.61955 2.77051 8.29368 3.44238 8.01737 4.17184C7.26941 6.14646 6.83219 8.6834 6.7605 11.25H1.77702ZM22.223 11.25C21.9131 6.96474 18.9688 3.40968 15.0017 2.19652C15.3804 2.7705 15.7063 3.44237 15.9826 4.17184C16.7306 6.14646 17.1678 8.68339 17.2395 11.25H22.223ZM17.2363 12.75H22.223C21.9096 17.0831 18.9026 20.6697 14.8683 21.8433C15.3054 21.1784 15.6769 20.3815 15.9865 19.5257C16.7184 17.5024 17.1555 15.0049 17.2363 12.75ZM15.7389 11.25C15.6673 8.82754 15.2524 6.47853 14.5799 4.70318C14.2082 3.72199 13.7735 2.95797 13.3101 2.45179C12.8514 1.95079 12.413 1.75001 12 1.75001C11.587 1.75001 11.1486 1.95079 10.6899 2.45179C10.2264 2.95797 9.79177 3.72198 9.42011 4.70318C8.74763 6.47853 8.33271 8.82753 8.2611 11.25H15.7389ZM8.2611 12.75H15.7353C15.6546 14.8507 15.2437 17.1694 14.576 19.0155C14.2009 20.0524 13.7605 20.8958 13.2866 21.4657C12.8125 22.0358 12.3806 22.248 12.0054 22.25H11.9937C11.5826 22.248 11.1463 22.0467 10.6899 21.5482C10.2264 21.0421 9.79177 20.278 9.42011 19.2968C8.74763 17.5215 8.3327 15.1725 8.2611 12.75ZM6.7605 12.75C6.83219 15.3166 7.26941 17.8536 8.01737 19.8282C8.29367 20.5576 8.61954 21.2295 8.99825 21.8035C5.03121 20.5903 2.08691 17.0352 1.77702 12.75H6.7605Z" fill="currentColor"></path></g><defs><clipPath id="globe__clip0_17007_17104"><rect width="24" height="24" fill="currentColor"></rect></clipPath></defs></svg>
       ivaylokrastev.com</a>
-    <div style="font-size:11px;margin-top:10px;opacity:.75">Version 1.5.13</div>
+    <div id="offlineBadge" class="off-badge" role="status" aria-live="polite">
+      <span class="off-dot"></span><span id="offlineBadgeText">Checking offline readiness…</span></div>
+    <div style="font-size:11px;margin-top:10px;opacity:.75">Version 1.5.14</div>
   </div>
 </div>
 </main>
@@ -2461,6 +2473,51 @@ if('serviceWorker' in navigator && location.protocol!=='file:')
   navigator.serviceWorker.register('sw.js',{updateViaCache:'none'})
     .then(()=>registerPeriodic())
     .catch(err=>{ console.warn('SeaReady: service worker registration failed \u2014 offline use unavailable.', err); });
+/* Ask the browser to protect our cache from automatic eviction.
+   Without this, a browser reclaiming space can silently drop the cached app —
+   which is why offline can stop working after a long period of not opening it.
+   Chrome grants this readily for installed apps / engaged sites. */
+async function requestPersistentStorage(){
+  try{
+    if(!navigator.storage || !navigator.storage.persist) return null;
+    if(await navigator.storage.persisted()) return true;
+    return await navigator.storage.persist();
+  }catch(e){ return null; }
+}
+/* --- offline readiness indicator ------------------------------------------
+   Reads the cache directly (works offline, no service-worker round trip). */
+const OFF_CORE=['./index.html','./manifest.json','./icon-192.png'];
+const OFF_OCR=['./ocr/tesseract.min.js','./ocr/worker.min.js',
+  './ocr/tesseract-core-simd-lstm.wasm.js','./ocr/tesseract-core-relaxedsimd-lstm.wasm.js','./ocr/eng.traineddata.gz'];
+async function countCached(list){
+  let n=0;
+  for(const u of list){
+    try{ if(await caches.match(new URL(u,location.href).href,{ignoreSearch:true})) n++; }catch(e){}
+  }
+  return n;
+}
+async function refreshOfflineBadge(){
+  const el=document.getElementById('offlineBadge'), txt=document.getElementById('offlineBadgeText');
+  if(!el||!txt) return;
+  if(!('caches' in window)) return;                     // no Cache API → nothing meaningful to report
+  let core=0, ocr=0;
+  try{ core=await countCached(OFF_CORE); ocr=await countCached(OFF_OCR); }catch(e){ return; }
+  const persisted = navigator.storage&&navigator.storage.persisted ? await navigator.storage.persisted().catch(()=>null) : null;
+  el.classList.add('show'); el.classList.remove('ok','part','no');
+  if(core===0){
+    el.classList.add('no');
+    txt.textContent = navigator.onLine ? 'Preparing offline use…' : 'Not saved for offline use';
+  } else if(ocr<OFF_OCR.length){
+    el.classList.add('part');
+    txt.textContent = 'Ready offline · scanner still downloading';
+  } else {
+    el.classList.add('ok');
+    txt.textContent = 'Ready for offline use';
+  }
+  el.title = 'App files: '+core+'/'+OFF_CORE.length+' · Scanner: '+ocr+'/'+OFF_OCR.length
+    + (persisted===true ? ' · Storage protected from automatic cleanup'
+      : persisted===false ? ' · Storage not protected — may be cleared if the device runs low on space' : '');
+}
 /* keep the full offline asset set (shell + OCR) verified and repaired whenever online, so going offline never surprises the user */
 let _offlineRetry=null;
 function ensureOfflineAssets(){
@@ -2473,14 +2530,24 @@ function ensureOfflineAssets(){
 function scheduleOfflineCheck(delay){ clearTimeout(_offlineRetry); _offlineRetry=setTimeout(ensureOfflineAssets, delay); }
 if('serviceWorker' in navigator){
   navigator.serviceWorker.addEventListener('message',ev=>{
-    if(ev.data && ev.data.type==='offline-status' && ev.data.remaining>0 && navigator.onLine)
-      scheduleOfflineCheck(30000);        // some assets still missing (poor signal) — try again soon
+    if(ev.data && ev.data.type==='offline-status'){
+      refreshOfflineBadge();
+      if(ev.data.remaining>0 && navigator.onLine)
+        scheduleOfflineCheck(30000);      // some assets still missing (poor signal) — try again soon
+    }
   });
+  requestPersistentStorage().then(refreshOfflineBadge);
+  setTimeout(refreshOfflineBadge, 1200);
   scheduleOfflineCheck(2500);                                        // shortly after load
   window.addEventListener('online', ()=>scheduleOfflineCheck(1500)); // as soon as a connection returns
   document.addEventListener('visibilitychange', ()=>{               // when the app is reopened / brought to front
-    if(document.visibilityState==='visible' && navigator.onLine) scheduleOfflineCheck(1000);
+    if(document.visibilityState==='visible'){
+      refreshOfflineBadge();
+      /* re-assert persistence: a long-idle app is exactly what gets evicted */
+      if(navigator.onLine){ requestPersistentStorage(); scheduleOfflineCheck(1000); }
+    }
   });
+  window.addEventListener('offline', refreshOfflineBadge);
 }
 writeSnapshot();
 if(INSTALLED){
