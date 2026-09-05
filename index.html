@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  SeaReady v1.5.14 — Sea Service, Certificates and Documents Tracker for Seafarers
+  SeaReady v1.5.15 — Sea Service, Certificates and Documents Tracker for Seafarers
   Copyright (c) 2026 Ivaylo Krastev — https://ivaylokrastev.com
   All rights reserved. See LICENSE for terms.
 -->
@@ -510,7 +510,7 @@ input::placeholder,textarea::placeholder{color:var(--txt-3);opacity:1}
       ivaylokrastev.com</a>
     <div id="offlineBadge" class="off-badge" role="status" aria-live="polite">
       <span class="off-dot"></span><span id="offlineBadgeText">Checking offline readiness…</span></div>
-    <div style="font-size:11px;margin-top:10px;opacity:.75">Version 1.5.14</div>
+    <div style="font-size:11px;margin-top:10px;opacity:.75">Version 1.5.15</div>
   </div>
 </div>
 </main>
@@ -2496,27 +2496,58 @@ async function countCached(list){
   }
   return n;
 }
+/* Cached files alone do NOT mean the app opens offline: without an active service
+   worker controlling the page there is nothing to serve them, and the launch falls
+   through to the browser's offline page. Readiness must check BOTH. */
+async function offlineState(){
+  const s={active:false, controlling:false, core:0, ocr:0, persisted:null};
+  if('serviceWorker' in navigator){
+    try{ const reg=await navigator.serviceWorker.getRegistration(); s.active=!!(reg&&reg.active); }catch(e){}
+    s.controlling=!!navigator.serviceWorker.controller;
+  }
+  if('caches' in window){
+    try{ s.core=await countCached(OFF_CORE); s.ocr=await countCached(OFF_OCR); }catch(e){}
+  }
+  if(navigator.storage&&navigator.storage.persisted){
+    s.persisted=await navigator.storage.persisted().catch(()=>null);
+  }
+  return s;
+}
+/* If the worker is missing (registration lost to a browser/OS cleanup) re-register it
+   while we still have a connection, instead of failing silently at sea. */
+async function recoverOfflineWorker(){
+  if(!('serviceWorker' in navigator) || !navigator.onLine) return;
+  try{
+    const reg=await navigator.serviceWorker.getRegistration();
+    if(!reg) await navigator.serviceWorker.register('sw.js',{updateViaCache:'none'});
+    else await reg.update();
+  }catch(e){ console.warn('SeaReady: could not restore the offline worker.', e); }
+}
 async function refreshOfflineBadge(){
   const el=document.getElementById('offlineBadge'), txt=document.getElementById('offlineBadgeText');
   if(!el||!txt) return;
-  if(!('caches' in window)) return;                     // no Cache API → nothing meaningful to report
-  let core=0, ocr=0;
-  try{ core=await countCached(OFF_CORE); ocr=await countCached(OFF_OCR); }catch(e){ return; }
-  const persisted = navigator.storage&&navigator.storage.persisted ? await navigator.storage.persisted().catch(()=>null) : null;
+  if(!('caches' in window) && !('serviceWorker' in navigator)) return;
+  const s=await offlineState();
+  const served = s.active && s.controlling;      // only then can a cached file actually be served
   el.classList.add('show'); el.classList.remove('ok','part','no');
-  if(core===0){
+  if(!served){
+    el.classList.add('no');
+    txt.textContent = navigator.onLine ? 'Setting up offline use…' : 'Offline use not active';
+    if(navigator.onLine) recoverOfflineWorker();          // repair now, while there is a connection
+  } else if(s.core<OFF_CORE.length){
     el.classList.add('no');
     txt.textContent = navigator.onLine ? 'Preparing offline use…' : 'Not saved for offline use';
-  } else if(ocr<OFF_OCR.length){
+  } else if(s.ocr<OFF_OCR.length){
     el.classList.add('part');
     txt.textContent = 'Ready offline · scanner still downloading';
   } else {
     el.classList.add('ok');
     txt.textContent = 'Ready for offline use';
   }
-  el.title = 'App files: '+core+'/'+OFF_CORE.length+' · Scanner: '+ocr+'/'+OFF_OCR.length
-    + (persisted===true ? ' · Storage protected from automatic cleanup'
-      : persisted===false ? ' · Storage not protected — may be cleared if the device runs low on space' : '');
+  el.title = 'Offline worker: '+(s.active?(s.controlling?'active':'not controlling this page'):'missing')
+    + ' · App files: '+s.core+'/'+OFF_CORE.length+' · Scanner: '+s.ocr+'/'+OFF_OCR.length
+    + (s.persisted===true ? ' · Storage protected from automatic cleanup'
+      : s.persisted===false ? ' · Storage NOT protected — may be cleared by the device' : '');
 }
 /* keep the full offline asset set (shell + OCR) verified and repaired whenever online, so going offline never surprises the user */
 let _offlineRetry=null;
@@ -2536,15 +2567,17 @@ if('serviceWorker' in navigator){
         scheduleOfflineCheck(30000);      // some assets still missing (poor signal) — try again soon
     }
   });
+  navigator.serviceWorker.addEventListener('controllerchange', refreshOfflineBadge);
   requestPersistentStorage().then(refreshOfflineBadge);
   setTimeout(refreshOfflineBadge, 1200);
+  setTimeout(recoverOfflineWorker, 3000);       // heal a lost registration soon after launch
   scheduleOfflineCheck(2500);                                        // shortly after load
-  window.addEventListener('online', ()=>scheduleOfflineCheck(1500)); // as soon as a connection returns
+  window.addEventListener('online', ()=>{ recoverOfflineWorker(); scheduleOfflineCheck(1500); refreshOfflineBadge(); });
   document.addEventListener('visibilitychange', ()=>{               // when the app is reopened / brought to front
     if(document.visibilityState==='visible'){
       refreshOfflineBadge();
       /* re-assert persistence: a long-idle app is exactly what gets evicted */
-      if(navigator.onLine){ requestPersistentStorage(); scheduleOfflineCheck(1000); }
+      if(navigator.onLine){ requestPersistentStorage(); recoverOfflineWorker(); scheduleOfflineCheck(1000); }
     }
   });
   window.addEventListener('offline', refreshOfflineBadge);
