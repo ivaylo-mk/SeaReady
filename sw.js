@@ -1,4 +1,10 @@
-const CACHE='seaready-v52';
+/* Bumped each release so the browser sees a changed worker and installs it.
+   It is NOT a cache name any more — the shell cache below is deliberately
+   unversioned so a working offline copy is never deleted by an update. */
+const SW_VERSION='v53';
+/* App shell — UNVERSIONED. Updates overwrite its contents in place (atomically,
+   via addAll), so there is always a last-known-good shell on the device. */
+const CACHE='seaready-shell';
 /* OCR engine lives in its OWN, UNVERSIONED cache so it survives shell updates.
    Bumping CACHE re-downloads only the small shell; the ~11MB engine is fetched once.
    Bump ASSETS only when the OCR files themselves change. */
@@ -32,7 +38,9 @@ self.addEventListener('install',e=>{
 self.addEventListener('activate',e=>{
   e.waitUntil((async()=>{
     const ks=await caches.keys();
-    await Promise.all(ks.filter(k=>!KEEP.includes(k)).map(k=>caches.delete(k)));
+    /* delete only OUR own outdated caches — never touch caches belonging to
+       anything else served from this origin */
+    await Promise.all(ks.filter(k=>k.startsWith('seaready-') && !KEEP.includes(k)).map(k=>caches.delete(k)));
     /* Repair the shell if site data was cleared — small and quick, so offline
        startup is restored before we take control. */
     await ensureShell().catch(()=>{});

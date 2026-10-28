@@ -6,8 +6,8 @@
 
 <p align="center">
 	<a href="https://seaready.ivaylokrastev.com"><img src="https://img.shields.io/badge/PWA-Ready-blue" alt="PWA" /></a>
-	<a href="https://seaready.ivaylokrastev.com"><img src="https://img.shields.io/badge/Offline-Ready-blue" alt="Offline" /></a>
-	<a href="https://seaready.ivaylokrastev.com"><img src="https://img.shields.io/badge/Version-1.5.15-blue" alt="Version" /></a>
+	<a href="https://seaready.ivaylokrastev.com"><img src="https://img.shields.io/badge/Works-Offline-blue" alt="Offline" /></a>
+	<a href="https://seaready.ivaylokrastev.com"><img src="https://img.shields.io/badge/Version-1.5.16-blue" alt="Version" /></a>
 </p>
 
 **Sea Service, Certificates and Documents Tracker for Seafarers**
@@ -16,20 +16,22 @@ SeaReady keeps a seafarer's documents, STCW certificates and sea service records
 
 **🌐 Live App:** **[https://seaready.ivaylokrastev.com](https://seaready.ivaylokrastev.com)**
 
-> Opens as an explorable demo; install it to your home screen for your own editable and fully offline copy.
+> Opens as an explorable demo; install it to your home screen for your own editable copy that runs on the device.
 
 ## Features
 
 * **Renewal horizon** — every dated certificate on one chart, soonest first, color-coded from expired to healthy
 * **Reminders** — notifications at 6 months and 3 months before expiry, and on expiry
-* **Certificate scanning** — photograph a certificate and SeaReady reads the name and expiry date for you (on-device OCR, works offline)
+* **Certificate scanning** — photograph a certificate and SeaReady reads the name and expiry date for you (on-device OCR, no upload)
 * **Sea service records** — contracts with rank, seniority, watchkeeping flag, filters and live totals in months and years
 * **Career timeline** — see your whole career at a glance, with each contract colour-coded by vessel type and the gaps showing your leave
 * **Officer Matrix** — time with operator, in rank, on vessel type, and as watch officer, calculated live; operator groups supported
 * **PDF reports** — documents, sea service and matrix as clean PDF files
 * **Multi-seafarer** — track several people on one device
 * **Backup & transfer** — export/import everything as a single file
-* **100% offline** — OCR engine, language data and PDF engine are bundled; no account, no server, no tracking
+* **Runs on your device** — the OCR engine, language data and PDF engine are all bundled, so SeaReady is built to work without a connection; no account, no server, no tracking
+
+> **A note on offline use.** SeaReady keeps everything it needs on your device and is built to work without a connection. Browsers and phones manage that stored data themselves, so a web app’s files can occasionally be cleared — if that happens, opening SeaReady once with an internet connection restores it. Your saved records are not affected.
 
 ## Installing
 
